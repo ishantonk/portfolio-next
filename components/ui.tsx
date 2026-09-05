@@ -897,36 +897,40 @@ export function ImageUploader({
   onUploaded: (url: string) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [preview, setPreview] = useState<string>(currentImage);
+
+  // Local preview is only set when the user selects a new image.
+  // If there is no local preview, we automatically use currentImage.
+  const [localPreview, setLocalPreview] = useState<string | null>(null);
+
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [dragging, setDragging] = useState(false);
 
-  // Keep preview in sync if parent updates
-  useEffect(() => {
-    setPreview(currentImage);
-  }, [currentImage]);
+  const preview = localPreview ?? currentImage;
 
   const handleFile = async (file: File) => {
     if (!file.type.startsWith("image/")) {
       setError("Please select an image file.");
       return;
     }
+
     if (file.size > 4 * 1024 * 1024) {
       setError("Image must be under 4 MB.");
       return;
     }
 
-    // Local preview immediately
+    // Create an immediate local preview
     const objectUrl = URL.createObjectURL(file);
-    setPreview(objectUrl);
+
+    setLocalPreview(objectUrl);
     setError(null);
     setUploading(true);
     setSuccess(false);
 
     try {
       const form = new FormData();
+
       form.append("file", file);
       form.append("profileId", profileId);
 
@@ -934,58 +938,103 @@ export function ImageUploader({
         method: "POST",
         body: form,
       });
+
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
+
         throw new Error(body.error ?? "Upload failed");
       }
+
       const { url } = await res.json();
-      setPreview(url);
+
+      // Replace local object URL with the actual uploaded URL
+      setLocalPreview(url);
+
       onUploaded(url);
+
       setSuccess(true);
-      setTimeout(() => setSuccess(false), 2500);
-    } catch (e: any) {
-      setError(e.message);
-      setPreview(currentImage); // roll back
+
+      setTimeout(() => {
+        setSuccess(false);
+      }, 2500);
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Upload failed";
+
+      setError(message);
+
+      // Clear local preview so it falls back to currentImage
+      setLocalPreview(null);
     } finally {
       setUploading(false);
+
       URL.revokeObjectURL(objectUrl);
     }
   };
 
   const onInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) handleFile(file);
+
+    if (file) {
+      handleFile(file);
+    }
+
+    // Allow selecting the same file again
     e.target.value = "";
   };
 
-  const onDrop = (e: React.DragEvent) => {
+  const onDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
+
     setDragging(false);
+
     const file = e.dataTransfer.files?.[0];
-    if (file) handleFile(file);
+
+    if (file) {
+      handleFile(file);
+    }
   };
 
   return (
     <div className="space-y-4">
-      {/* Current image + overlay trigger */}
+      {/* Current image + upload trigger */}
       <div
-        className="group relative cursor-pointer overflow-hidden rounded-3xl border-2 border-dashed border-black/10 transition hover:border-black/30"
-        onClick={() => inputRef.current?.click()}
+        className={`group relative cursor-pointer overflow-hidden rounded-3xl border-2 border-dashed transition ${
+          dragging ? "border-black/40" : "border-black/10 hover:border-black/30"
+        }`}
+        onClick={() => {
+          if (!uploading) {
+            inputRef.current?.click();
+          }
+        }}
         onDragOver={(e) => {
           e.preventDefault();
-          setDragging(true);
+
+          if (!uploading) {
+            setDragging(true);
+          }
         }}
-        onDragLeave={() => setDragging(false)}
+        onDragLeave={() => {
+          setDragging(false);
+        }}
         onDrop={onDrop}
         role="button"
         tabIndex={0}
-        onKeyDown={(e) => e.key === "Enter" && inputRef.current?.click()}
+        onKeyDown={(e) => {
+          if ((e.key === "Enter" || e.key === " ") && !uploading) {
+            e.preventDefault();
+            inputRef.current?.click();
+          }
+        }}
         aria-label="Upload new profile photo"
+        aria-disabled={uploading}
       >
         {/* Photo */}
-        <img
+
+        <Image
           src={preview || "/profile.png"}
           alt="Profile"
+          fill
+          sizes="200"
           className={`h-64 w-full object-cover transition duration-300 ${
             uploading || dragging
               ? "brightness-50"
@@ -1002,11 +1051,13 @@ export function ImageUploader({
           {uploading ? (
             <>
               <Loader2 size={28} className="animate-spin text-white" />
+
               <span className="text-xs font-bold text-white">Uploading…</span>
             </>
           ) : dragging ? (
             <>
               <Upload size={28} className="text-white" />
+
               <span className="text-xs font-bold text-white">
                 Drop to upload
               </span>
@@ -1016,6 +1067,7 @@ export function ImageUploader({
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20 backdrop-blur">
                 <Camera size={22} className="text-white" />
               </div>
+
               <span className="text-xs font-bold text-white">Change photo</span>
             </>
           )}
@@ -1024,11 +1076,13 @@ export function ImageUploader({
         {/* Success badge */}
         {success && (
           <div className="absolute right-3 top-3 flex items-center gap-1.5 rounded-full bg-[#b7f23d] px-3 py-1.5 text-xs font-bold text-black shadow">
-            <Check size={13} /> Uploaded
+            <Check size={13} />
+            Uploaded
           </div>
         )}
       </div>
 
+      {/* Hidden file input */}
       <input
         ref={inputRef}
         type="file"
@@ -1037,7 +1091,7 @@ export function ImageUploader({
         onChange={onInputChange}
       />
 
-      {/* Upload button (alternate CTA) */}
+      {/* Upload button */}
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
@@ -1045,15 +1099,19 @@ export function ImageUploader({
         className="flex w-full items-center justify-center gap-2 rounded-2xl border border-black/10 bg-[#f4f4f0] py-3 text-sm font-bold transition hover:border-black/20 hover:bg-white disabled:opacity-50"
       >
         <ImagePlus size={16} />
+
         {uploading ? "Uploading…" : "Choose new photo"}
       </button>
 
+      {/* Error */}
       {error && (
         <p className="flex items-center gap-1.5 text-xs text-red-500">
-          <AlertCircle size={13} /> {error}
+          <AlertCircle size={13} />
+          {error}
         </p>
       )}
 
+      {/* Help text */}
       <p className="text-center text-[11px] text-neutral-400">
         JPEG, PNG, WebP or GIF · max 4 MB
         <br />

@@ -45,6 +45,7 @@ import {
   DropdownHeader,
   DropdownItem,
   Field,
+  ImageUploader,
   MobileTabNavigation,
   Sparkle,
   Stat,
@@ -547,36 +548,6 @@ function ProfileTab({ profile }: { profile: ProfileWithRelationsDTO | null }) {
     );
   };
 
-  const handleImageUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    const file = event.target.files?.[0];
-
-    if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      return;
-    }
-
-    try {
-      setUploadingImage(true);
-      setSaved(false);
-
-      const url = await uploadFile(file, "profile-images");
-
-      updateField("image", url);
-    } catch {
-      // Handle upload error if needed.
-    } finally {
-      setUploadingImage(false);
-      event.target.value = "";
-    }
-  };
-
   const handleResumeUpload = async (
     event: React.ChangeEvent<HTMLInputElement>,
   ) => {
@@ -675,17 +646,17 @@ function ProfileTab({ profile }: { profile: ProfileWithRelationsDTO | null }) {
       </div>
 
       {/* Status */}
-      {/* {error && (
+      {error && (
         <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
           {error}
         </div>
-      )} */}
+      )}
 
-      {/* {saved && !error && (
+      {saved && !error && (
         <div className="rounded-2xl border border-green-200 bg-green-50 px-5 py-4 text-sm text-green-700">
           Profile updated successfully.
         </div>
-      )} */}
+      )}
 
       <div className="grid gap-6 lg:grid-cols-[1.2fr_.8fr]">
         {/* Main information */}
@@ -805,84 +776,12 @@ function ProfileTab({ profile }: { profile: ProfileWithRelationsDTO | null }) {
               </p>
 
               <h3 className="mt-1 text-xl font-bold">Avatar</h3>
-            </div>
 
-            <div className="p-7">
-              <label
-                htmlFor="profile-image-upload"
-                className={`group relative block cursor-pointer overflow-hidden rounded-3xl border-2 border-dashed border-black/10 bg-[#f8f8f5] transition hover:border-black/25 hover:bg-[#f3f3ef] ${
-                  uploadingImage ? "pointer-events-none" : ""
-                }`}
-              >
-                <input
-                  id="profile-image-upload"
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp"
-                  onChange={handleImageUpload}
-                  className="sr-only"
-                  disabled={uploadingImage}
-                />
-
-                <div className="relative aspect-square w-full overflow-hidden">
-                  {form.image ? (
-                    <>
-                      <Image
-                        src={form.image}
-                        alt={form.name || "Profile"}
-                        fill
-                        sizes="200"
-                        className="object-cover transition duration-500 group-hover:scale-105"
-                      />
-
-                      <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/60 via-transparent to-transparent p-5 opacity-0 transition group-hover:opacity-100">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-white">
-                          <Upload size={16} />
-                          Change photo
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="flex h-full flex-col items-center justify-center p-8 text-center">
-                      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-black/5">
-                        <Upload size={25} className="text-neutral-500" />
-                      </div>
-
-                      <p className="mt-5 text-sm font-bold">
-                        Upload your profile photo
-                      </p>
-
-                      <p className="mt-1 max-w-[220px] text-xs leading-5 text-neutral-400">
-                        Drag and drop or click to browse
-                      </p>
-                    </div>
-                  )}
-
-                  {uploadingImage && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-                      <div className="rounded-2xl bg-white px-4 py-3 text-sm font-bold shadow-xl">
-                        Uploading…
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </label>
-
-              <div className="mt-4 flex items-center justify-between gap-3">
-                <p className="text-xs leading-5 text-neutral-400">
-                  JPG, PNG or WebP · Max 5 MB
-                </p>
-
-                {form.image && (
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    type="button"
-                    onClick={() => updateField("image", "")}
-                  >
-                    Remove
-                  </Button>
-                )}
-              </div>
+              <ImageUploader
+                profileId={profile?.id ?? ""}
+                currentImage={profile?.image ?? ""}
+                onUploaded={(url) => updateField("image", url)}
+              />
             </div>
           </section>
 

@@ -11,10 +11,11 @@ export default function LoginPage() {
   const router = useRouter();
   const { status } = useSession();
 
+  const [email, setEmail] = useState(ADMIN_EMAIL);
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // Redirect already-authenticated users
   useEffect(() => {
     if (status === "authenticated") {
       router.replace("/dashboard");
@@ -28,11 +29,6 @@ export default function LoginPage() {
 
     setError("");
     setIsLoading(true);
-
-    const formData = new FormData(e.currentTarget);
-
-    const email = String(formData.get("email") ?? "");
-    const password = String(formData.get("password") ?? "");
 
     try {
       const result = await signIn("credentials", {
@@ -75,8 +71,8 @@ export default function LoginPage() {
           label="Email"
           name="email"
           type="email"
-          value={ADMIN_EMAIL}
-          readOnly
+          value={email}
+          onChange={(e) => (setEmail(e.toString))}
           disabled={isLoading}
           required
         />
@@ -85,6 +81,8 @@ export default function LoginPage() {
           label="Password"
           name="password"
           type="password"
+          value={password}
+          onChange={(e) => (setPassword(e.toString))}
           placeholder="Enter your password"
           autoComplete="current-password"
           disabled={isLoading}

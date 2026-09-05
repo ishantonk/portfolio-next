@@ -665,17 +665,7 @@ export default function Portfolio() {
   }
 
   if (error || !profile || !projects || !socials) {
-    return (
-      <ErrorScreen
-        message={
-          typeof error === "string"
-            ? error
-            : error instanceof Error
-              ? error.message
-              : undefined
-        }
-      />
-    );
+    return <ErrorScreen message={error ?? undefined} />;
   }
 
   return (
