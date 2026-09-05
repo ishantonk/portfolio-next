@@ -1,24 +1,16 @@
-import { auth } from "@/auth";
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-
-export async function proxy(request: NextRequest) {
-  const session = await auth();
-
-  const isLoggedIn = !!session?.user;
-  const pathname = request.nextUrl.pathname;
-
-  console.log("Protected route:", pathname);
-  console.log("Logged in:", isLoggedIn);
-  
-  // User is NOT logged in → protect page
-  if (!isLoggedIn) {
-    return NextResponse.redirect(new URL("/login", request.url));
-  }
-
-  return NextResponse.next();
-}
+export { auth as proxy } from "@/auth";
 
 export const config = {
-  matcher: ["/dashboard/:path*"],
+  matcher: ["/login", "/dashboard/:path*"],
 };
+
+
+// Authenticated user trying to access /login
+// if (isLoggedIn && pathname === "/login") {
+//   return NextResponse.redirect(new URL("/dashboard", request.url));
+// }
+
+// // Unauthenticated user trying to access /dashboard
+// if (!isLoggedIn && pathname.startsWith("/dashboard")) {
+//   return NextResponse.redirect(new URL("/login", request.url));
+// }

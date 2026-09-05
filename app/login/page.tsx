@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { signIn, useSession } from "next-auth/react";
+import { useState } from "react";
+import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Button, Field } from "@/components/ui";
 
@@ -9,18 +9,11 @@ const ADMIN_EMAIL = "ishantonk.w@gmail.com";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { status } = useSession();
 
   const [email, setEmail] = useState(ADMIN_EMAIL);
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    if (status === "authenticated") {
-      router.replace("/dashboard");
-    }
-  }, [status, router]);
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -72,7 +65,7 @@ export default function LoginPage() {
           name="email"
           type="email"
           value={email}
-          onChange={(e) => (setEmail(e.toString))}
+          onChange={(e) => setEmail(e.toString())}
           disabled={isLoading}
           required
         />
@@ -82,7 +75,7 @@ export default function LoginPage() {
           name="password"
           type="password"
           value={password}
-          onChange={(e) => (setPassword(e.toString))}
+          onChange={(e) => setPassword(e.toString())}
           placeholder="Enter your password"
           autoComplete="current-password"
           disabled={isLoading}

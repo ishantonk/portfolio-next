@@ -477,7 +477,6 @@ function ProfileTab({ profile }: { profile: ProfileWithRelationsDTO | null }) {
 
   const [skillInput, setSkillInput] = useState("");
   const [saved, setSaved] = useState(false);
-  const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingResume, setUploadingResume] = useState(false);
 
   const updateField = <K extends keyof ProfileFormDTO>(
@@ -529,24 +528,7 @@ function ProfileTab({ profile }: { profile: ProfileWithRelationsDTO | null }) {
 
   /**
    * Replace this with your actual upload API.
-   *
-   * Example:
-   * const url = await uploadFile(file, "profile-images");
-   * updateField("image", url);
    */
-  const uploadFile = async (
-    file: File,
-    folder: "profile-images" | "resumes",
-  ): Promise<string> => {
-    // Replace with your real upload implementation.
-    // return await uploadToCloudinary(file, folder);
-    // return await uploadToS3(file, folder);
-    // return await uploadToSupabase(file, folder);
-
-    throw new Error(
-      `Implement uploadFile() for ${folder}. Selected: ${file.name}`,
-    );
-  };
 
   const handleResumeUpload = async (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -573,7 +555,21 @@ function ProfileTab({ profile }: { profile: ProfileWithRelationsDTO | null }) {
       setUploadingResume(true);
       setSaved(false);
 
-      const url = await uploadFile(file, "resumes");
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/profile/resume", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+
+        throw new Error(body.error ?? "Upload failed");
+      }
+
+      const { url } = await res.json();
 
       updateField("resume", url);
     } catch {
@@ -778,7 +774,7 @@ function ProfileTab({ profile }: { profile: ProfileWithRelationsDTO | null }) {
               <h3 className="mt-1 text-xl font-bold">Avatar</h3>
 
               <ImageUploader
-                profileId={profile?.id ?? ""}
+                uploadUrl="api/profile/image"
                 currentImage={profile?.image ?? ""}
                 onUploaded={(url) => updateField("image", url)}
               />
@@ -1827,35 +1823,12 @@ function ProjectsTab({
                   />
 
                   <div className="md:col-span-2">
-                    <Field
-                      label="Thumbnail URL"
-                      type="url"
-                      value={form.thumbnail}
-                      onChange={(value) =>
-                        updateField("thumbnail", value.toString())
-                      }
-                      placeholder="https://example.com/project.jpg"
+                    <ImageUploader
+                      uploadUrl={"api/projects/thumbnail"}
+                      currentImage={form.thumbnail}
+                      onUploaded={(url) => updateField("thumbnail", url)}
+                      aspectRatio="aspect-video"
                     />
-
-                    {/* Thumbnail preview */}
-                    {form.thumbnail.trim() && (
-                      <div className="mt-3 overflow-hidden rounded-2xl border border-black/10 bg-[#f4f4f0]">
-                        <div className="relative aspect-[16/7]">
-                          <img
-                            src={form.thumbnail}
-                            alt={`${form.title || "Project"} thumbnail preview`}
-                            className="h-full w-full object-cover"
-                            onError={(event) => {
-                              event.currentTarget.style.display = "none";
-                            }}
-                          />
-
-                          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-[#f4f4f0] text-neutral-400">
-                            <ImageIcon size={24} />
-                          </div>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>

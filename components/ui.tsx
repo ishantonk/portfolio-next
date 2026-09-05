@@ -888,13 +888,15 @@ export function MobileTabNavigation<T extends Tab>({
 }
 
 export function ImageUploader({
-  profileId,
+  uploadUrl,
   currentImage,
   onUploaded,
+  aspectRatio = "aspect-square",
 }: {
-  profileId: string;
+  uploadUrl: string;
   currentImage: string;
   onUploaded: (url: string) => void;
+  aspectRatio?: "aspect-square" | "aspect-video";
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -932,9 +934,8 @@ export function ImageUploader({
       const form = new FormData();
 
       form.append("file", file);
-      form.append("profileId", profileId);
 
-      const res = await fetch("/api/profile/image", {
+      const res = await fetch(uploadUrl, {
         method: "POST",
         body: form,
       });
@@ -998,7 +999,7 @@ export function ImageUploader({
     <div className="space-y-4">
       {/* Current image + upload trigger */}
       <div
-        className={`group relative cursor-pointer overflow-hidden rounded-3xl border-2 border-dashed transition ${
+        className={`group relative ${aspectRatio} cursor-pointer overflow-hidden rounded-3xl border-2 border-dashed transition ${
           dragging ? "border-black/40" : "border-black/10 hover:border-black/30"
         }`}
         onClick={() => {
@@ -1034,8 +1035,8 @@ export function ImageUploader({
           src={preview || "/profile.png"}
           alt="Profile"
           fill
-          sizes="200"
-          className={`h-64 w-full object-cover transition duration-300 ${
+          sizes="100vh"
+          className={`h-auto w-full object-cover transition duration-300 ${
             uploading || dragging
               ? "brightness-50"
               : "group-hover:brightness-75"
@@ -1090,18 +1091,6 @@ export function ImageUploader({
         className="hidden"
         onChange={onInputChange}
       />
-
-      {/* Upload button */}
-      <button
-        type="button"
-        onClick={() => inputRef.current?.click()}
-        disabled={uploading}
-        className="flex w-full items-center justify-center gap-2 rounded-2xl border border-black/10 bg-[#f4f4f0] py-3 text-sm font-bold transition hover:border-black/20 hover:bg-white disabled:opacity-50"
-      >
-        <ImagePlus size={16} />
-
-        {uploading ? "Uploading…" : "Choose new photo"}
-      </button>
 
       {/* Error */}
       {error && (

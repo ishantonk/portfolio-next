@@ -37,6 +37,25 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
       return session;
     },
+
+    authorized({ auth, request }) {
+      const isLoggedIn = !!auth?.user;
+      const pathname = request.nextUrl.pathname;
+
+      // Not logged in → cannot access dashboard
+      if (pathname.startsWith("/dashboard")) {
+        return isLoggedIn;
+      }
+
+      // Logged in → cannot access login
+      if (pathname === "/login") {
+        if (isLoggedIn) {
+          return Response.redirect(new URL("/dashboard", request.nextUrl));
+        }
+      }
+
+      return true;
+    },
   },
   pages: { signIn: "/login" },
 });
