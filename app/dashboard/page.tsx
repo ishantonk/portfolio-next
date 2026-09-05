@@ -1,7 +1,5 @@
-import Dashboard from '@/components/dashboard'
-
-export const metadata = { title: 'Dashboard — Ishan Tonk Portfolio' }
+import Dashboard from "@/components/dashboard";
 
 export default function DashboardPage() {
-  return <Dashboard />
+  return <Dashboard />;
 }
