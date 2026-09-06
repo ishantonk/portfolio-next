@@ -1,9 +1,11 @@
-export { auth as proxy } from "@/auth";
+import NextAuth from "next-auth";
+import { authConfig } from "@/auth.config";
+
+export default NextAuth(authConfig).auth;
 
 export const config = {
   matcher: ["/login", "/dashboard/:path*"],
 };
-
 
 // Authenticated user trying to access /login
 // if (isLoggedIn && pathname === "/login") {
